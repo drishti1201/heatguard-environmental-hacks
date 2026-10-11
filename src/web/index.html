@@ -384,6 +384,57 @@ body {
   margin-top: 10px;
 }
 
+/* Data Source Transparency Banner */
+.data-source-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 24px;
+  background: #f1f7f4;
+  border-bottom: 1px solid #cbded5;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.source-badge {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: #e5f3ef;
+  color: #086b5c;
+  border: 1px solid #b7d8cc;
+}
+
+.source-badge.simulated {
+  background: #fff3e0;
+  color: #9a4e00;
+  border-color: #f2ce9f;
+}
+
+.source-badge.historical {
+  background: #edf2f7;
+  color: #365b7d;
+  border-color: #cbd7e3;
+}
+
+.source-copy {
+  color: var(--ink-secondary);
+}
+
+.source-copy strong {
+  color: var(--ink-primary);
+}
+
+@media (max-width: 600px) {
+  .data-source-banner {
+    padding: 12px 16px;
+  }
+}
+
 @media (max-width: 980px) {
   .console-split { grid-template-columns: 1fr; }
   .pane-left { border-right: none; }
@@ -439,6 +490,20 @@ body {
     </div>
   </div>
 
+  <!-- Data Source Transparency -->
+  <div class="data-source-banner" role="status" aria-live="polite">
+    <span class="source-badge simulated" id="sourceBadge">
+      SIMULATED DATA
+    </span>
+    <div class="source-copy">
+      <strong id="sourceTitle">Demonstration scenario</strong>
+      <span id="sourceDescription">
+        Synthetic weather conditions are being used to demonstrate household
+        risk ranking. These are not live measurements or official alerts.
+      </span>
+    </div>
+  </div>
+
   <!-- KPI Ticker -->
   <div class="kpi-ticker">
     <div class="kpi-cell">
@@ -457,6 +522,25 @@ body {
       <span class="tag">Meteorological Source</span>
       <div class="value" id="source" style="font-size:16px; padding-top:6px;">—</div>
     </div>
+  </div>
+
+  <!-- Field Visit Progress -->
+  <div class="pane-section" id="visitProgress" style="background:#fcfbf8; border-bottom:1px solid #e3ded5;">
+    <div class="section-tagline">
+      <h3>Field Visit Progress</h3>
+      <span class="meta" id="visitCount">0 of 0 visited</span>
+    </div>
+
+    <div style="height:10px; background:#e3ded5; border-radius:3px; overflow:hidden;">
+      <div id="visitProgressBar"
+           style="height:100%; width:0%; background:#086b5c; transition:width 0.3s;">
+      </div>
+    </div>
+
+    <p id="visitProgressText"
+       style="font-size:12px; color:#575e5b; margin:8px 0 0;">
+      Mark households as visited to track field progress.
+    </p>
   </div>
 
   <!-- Operational Advisory Strip -->
@@ -495,7 +579,7 @@ body {
             <tr>
               <th>Ward</th>
               <th>Census</th>
-              <th>High Risk</th>
+              <th>Pending High Risk</th>
               <th>Tin/Asbestos %</th>
               <th>Cool-Roof Priority</th>
             </tr>
@@ -504,6 +588,16 @@ body {
             <tr><td colspan="5" style="text-align:center; color:var(--ink-subtle);">Loading ward metrics...</td></tr>
           </tbody>
         </table>
+                
+        <div style="margin-top:20px;">
+          <div class="section-tagline">
+            <h3>Ward-wise Heat Risk Map</h3>
+            <span class="meta">Current scenario</span>
+          </div>
+          <div id="wardRiskMap" style="min-height:220px; padding:20px; border:1px solid #e3ded5; border-radius:6px; background:#fcfbf8;">
+            <p style="color:var(--ink-subtle);">Loading ward risk map...</p>
+          </div>
+        </div>
 
         <div style="margin-top:20px;">
           <div class="section-tagline">
@@ -523,6 +617,49 @@ body {
           <span class="meta">Prioritized by multi-variable heat vulnerability index</span>
         </div>
       </div>
+      
+      <div style="display:flex; gap:10px; flex-wrap:wrap; padding:12px 16px; background:#fcfbf8; border-bottom:1px solid #e3ded5;">
+        <input
+          id="householdSearch"
+          type="search"
+          placeholder="Search name or household ID..."
+          aria-label="Search households"
+          oninput="applyHouseholdFilters()"
+          style="flex:1; min-width:200px; padding:10px; border:1px solid #d8d2c8; border-radius:4px; font:inherit;"
+        />
+
+        <select
+          id="visitFilter"
+          aria-label="Filter visit status"
+          onchange="applyHouseholdFilters()"
+          style="padding:10px; border:1px solid #d8d2c8; border-radius:4px; background:#fff; font:inherit;"
+        >
+          <option value="all">All households</option>
+          <option value="pending">Pending visits only</option>
+          <option value="visited">Visited only</option>
+        </select>
+
+        <select
+          id="riskFilter"
+          aria-label="Filter by risk"
+          onchange="applyHouseholdFilters()"
+          style="padding:10px; border:1px solid #d8d2c8; border-radius:4px; background:#fff; font:inherit;"
+        >
+          <option value="all">All risk levels</option>
+          <option value="high">High risk</option>
+          <option value="medium">Medium risk</option>
+          <option value="low">Low risk</option>
+        </select>
+
+        <button
+          type="button"
+          id="downloadCsvBtn"
+          class="term-btn"
+        >
+          Download CSV Report
+        </button>
+      </div>
+
       <div class="queue-container" id="households">
         <div style="padding:20px; text-align:center; color:var(--ink-subtle);">Loading priority queue...</div>
       </div>
@@ -534,6 +671,41 @@ body {
 const API_BASE = "https://jiy3g526lmitpenyg25tvbbhze0dsajn.lambda-url.ap-southeast-2.on.aws";
 const $ = id => document.getElementById(id);
 let briefingText = "";
+
+function updateSourceBanner(mode, dateStr = "") {
+  const badge = $("sourceBadge");
+  const title = $("sourceTitle");
+  const description = $("sourceDescription");
+
+  badge.className = "source-badge";
+
+  if (mode === "simulated") {
+    badge.textContent = "SIMULATED DATA";
+    badge.classList.add("simulated");
+    title.textContent = "Demonstration scenario — not a real alert. ";
+    description.textContent =
+      "Synthetic hot-day or cool-day conditions are used to demonstrate " +
+      "the risk-ranking workflow. They are not live measurements or official warnings.";
+  } else if (mode === "live") {
+    badge.textContent = "LIVE FORECAST";
+    title.textContent = "Open-Meteo weather forecast. ";
+    description.textContent =
+      "Weather forecast data is used to calculate wet-bulb conditions. " +
+      "Forecasts can change and are not official emergency alerts.";
+  } else if (mode === "historical") {
+    badge.textContent = "HISTORICAL DATA";
+    badge.classList.add("historical");
+    title.textContent = `Past weather observations — ${dateStr}. `;
+    description.textContent =
+      "Weather data for the selected date is used for retrospective analysis, " +
+      "not as a current forecast or official alert.";
+  } else {
+    badge.textContent = "SOURCE UNKNOWN";
+    title.textContent = "Data source could not be confirmed. ";
+    description.textContent =
+      "Check the request status before interpreting the results.";
+  }
+}
 
 function updateClock() {
   const now = new Date();
@@ -573,46 +745,163 @@ function computeSafeWorkWindow(curve) {
 
 function renderWardPlanner(households) {
   const tbody = $("wardTableBody");
+
   if (!Array.isArray(households) || households.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No records available.</td></tr>';
+    tbody.innerHTML =
+      '<tr><td colspan="5" style="text-align:center;">No records available.</td></tr>';
     return;
   }
+
+  const visited = getVisitedHouseholds();
   const wards = {};
+
   households.forEach(h => {
-    const w = h.ward ? `Ward ${h.ward}` : "Unassigned";
-    if (!wards[w]) wards[w] = { total: 0, high: 0, tinRoof: 0 };
-    wards[w].total += 1;
-    if (String(h.risk).toLowerCase() === "high") wards[w].high += 1;
-    const r = (h.reason_en || "").toLowerCase();
-    if (r.includes("tin") || r.includes("roof") || r.includes("asbestos")) {
-      wards[w].tinRoof += 1;
+    const wardName = h.ward ? `Ward ${h.ward}` : "Unassigned";
+
+    if (!wards[wardName]) {
+      wards[wardName] = {
+        total: 0,
+        pending: 0,
+        pendingHigh: 0,
+        pendingTinRoof: 0
+      };
+    }
+
+    const w = wards[wardName];
+    w.total += 1;
+
+    if (!visited.has(String(h.id))) {
+      w.pending += 1;
+
+      if (String(h.risk).toLowerCase() === "high") {
+        w.pendingHigh += 1;
+      }
+
+      const reason = (h.reason_en || "").toLowerCase();
+
+      if (
+        reason.includes("tin") ||
+        reason.includes("roof") ||
+        reason.includes("asbestos")
+      ) {
+        w.pendingTinRoof += 1;
+      }
     }
   });
 
-  const wardArray = Object.entries(wards).map(([name, s]) => {
-    const tinPct = Math.round((s.tinRoof / Math.max(1, s.total)) * 100);
-    const score = (s.high * 10) + (tinPct * 0.1);
-    return { name, total: s.total, high: s.high, tinRoof: s.tinRoof, tinPct, score };
+  const wardArray = Object.entries(wards).map(([name, w]) => {
+    const tinPct = w.pending === 0
+      ? 0
+      : Math.round((w.pendingTinRoof / w.pending) * 100);
+
+    const score = (w.pendingHigh * 10) + w.pendingTinRoof;
+
+    return {
+      name,
+      total: w.total,
+      pending: w.pending,
+      high: w.pendingHigh,
+      tinPct,
+      score
+    };
   });
 
-  wardArray.sort((a,b) => b.score - a.score);
+  wardArray.sort((a, b) => b.score - a.score);
 
   tbody.innerHTML = wardArray.map((w, idx) => {
     let badge = '<span class="badge-p3">Priority 3: Standard</span>';
-    if (idx < 2) {
+
+    if (w.pending === 0) {
+      badge = '<span class="badge-p3">Visits Complete</span>';
+    } else if (idx < 2) {
       badge = '<span class="badge-p1">Priority 1: Immediate Cool-Roof</span>';
     } else if (idx < 4) {
       badge = '<span class="badge-p2">Priority 2: Secondary</span>';
     }
-    const sampleNote = w.total <= 5 ? ' <small style="color:var(--ink-subtle);">(small sample)</small>' : '';
+
     return `<tr>
-      <td><strong>${escapeHtml(w.name)}</strong>${sampleNote}</td>
-      <td style="font-family:var(--font-mono);">${w.total}</td>
-      <td style="font-family:var(--font-mono); font-weight:700; color:${w.high > 0 ? 'var(--danger-crimson)' : 'var(--accent-teal)'};">${w.high}</td>
+      <td><strong>${escapeHtml(w.name)}</strong></td>
+      <td style="font-family:var(--font-mono);">
+        ${w.total}
+        <small style="color:var(--ink-subtle);">(${w.pending} pending)</small>
+      </td>
+      <td style="font-family:var(--font-mono); font-weight:700;
+        color:${w.high > 0 ? 'var(--danger-crimson)' : 'var(--accent-teal)'};">
+        ${w.high}
+      </td>
       <td style="font-family:var(--font-mono);">${w.tinPct}%</td>
       <td>${badge}</td>
     </tr>`;
   }).join("");
+}
+
+function renderWardRiskMap(households) {
+  const map = $("wardRiskMap");
+  if (!map) return;
+
+  if (!Array.isArray(households) || households.length === 0) {
+    map.innerHTML = "<p>No ward data available.</p>";
+    return;
+  }
+
+  const visited = getVisitedHouseholds();
+  const wards = {};
+
+  households.forEach(h => {
+    const ward = h.ward ? `Ward ${h.ward}` : "Unassigned";
+
+    if (!wards[ward]) {
+      wards[ward] = { total: 0, pendingHigh: 0, pending: 0 };
+    }
+
+    if (!visited.has(String(h.id))) {
+      wards[ward].pending++;
+      if (String(h.risk).toLowerCase() === "high") {
+        wards[ward].pendingHigh++;
+      }
+    }
+
+    wards[ward].total++;
+  });
+
+  const entries = Object.entries(wards).sort(
+    (a, b) => b[1].pendingHigh - a[1].pendingHigh
+  );
+
+  map.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;">
+      ${entries.map(([ward, data]) => {
+        const color = data.pending === 0
+          ? "#086b5c"
+          : data.pendingHigh > 0
+            ? "#c22f25"
+            : "#b86200";
+
+        const label = data.pending === 0
+          ? "Visits complete"
+          : data.pendingHigh > 0
+            ? "High risk pending"
+            : "Visits pending";
+
+        return `
+          <div style="padding:14px;border:1px solid ${color};border-left:5px solid${color};border-radius:5px;background:white;">
+            <strong>${escapeHtml(ward)}</strong>
+            <div style="font-size:24px;font-weight:700;color:${color};margin:8px 0;">
+              ${data.pendingHigh}
+            </div>
+            <div style="font-size:12px;">Pending high-risk homes</div>
+            <div style="font-size:11px;margin-top:6px;color:${color};">${label}</div>
+            <div style="font-size:11px;color:var(--ink-subtle);margin-top:4px;">
+              ${data.pending} visits remaining / ${data.total} homes
+            </div>
+          </div>
+        `;
+      }).join("")}
+    </div>
+    <p style="font-size:11px;color:var(--ink-subtle);margin-bottom:0;">
+      Red = high-risk visits pending · Amber = visits pending · Teal = all visits complete
+    </p>
+  `;
 }
 
 function drawCurve(points) {
@@ -669,8 +958,28 @@ function drawCurve(points) {
   });
 }
 
+const VISITED_STORAGE_KEY = "mitaninHeatDeskVisited";
+
+function getVisitedHouseholds() {
+  try {
+    return new Set(
+      JSON.parse(localStorage.getItem(VISITED_STORAGE_KEY) || "[]")
+    );
+  } catch {
+    return new Set();
+  }
+}
+
+function saveVisitedHouseholds(visited) {
+  localStorage.setItem(
+    VISITED_STORAGE_KEY,
+    JSON.stringify([...visited])
+  );
+}
+
 function renderHouseholds(households) {
   const container=$("households");
+  window.currentHouseholds = households;
   if (!Array.isArray(households) || !households.length) {
     container.innerHTML='<div style="padding:20px; text-align:center; color:var(--ink-subtle);">No records returned.</div>';
     return;
@@ -694,10 +1003,93 @@ function renderHouseholds(households) {
     </div>`;
   }).join("");
 
-  container.querySelectorAll("[data-visit]").forEach(btn=>btn.addEventListener("click",()=>{
-    btn.classList.toggle("done");
-    btn.textContent=btn.classList.contains("done")?"✓ Done":"Mark Visited";
-  }));
+  const visited = getVisitedHouseholds();
+
+  container.querySelectorAll("[data-visit]").forEach(btn => {
+    const id = btn.dataset.visit;
+    const isVisited = visited.has(id);
+    btn.classList.toggle("done", isVisited);
+    btn.textContent = isVisited ? "✓ Done" : "Mark Visited";
+
+    btn.addEventListener("click", () => {
+      if (visited.has(id)) {
+        visited.delete(id);
+      } else {
+        visited.add(id);
+      }
+
+      saveVisitedHouseholds(visited);
+      renderWardPlanner(window.currentHouseholds || []);
+      renderWardRiskMap(window.currentHouseholds || []);
+      const done = visited.has(id);
+      btn.classList.toggle("done", done);
+      btn.textContent = done ? "✓ Done" : "Mark Visited";
+
+      updateVisitProgress();
+    });
+  });
+
+  updateVisitProgress();
+}
+
+function updateVisitProgress() {
+  const rows = [
+    ...document.querySelectorAll("#households .household-row")
+  ];
+
+  const visibleRows = rows.filter(
+    row => row.style.display !== "none"
+  );
+
+  const visitedRows = visibleRows.filter(
+    row => row.querySelector("[data-visit]")?.classList.contains("done")
+  );
+
+  const total = visibleRows.length;
+  const visited = visitedRows.length;
+  const percentage = total === 0 ? 0 : (visited / total) * 100;
+
+  $("visitCount").textContent = `${visited} of ${total} visited`;
+  $("visitProgressBar").style.width = `${percentage}%`;
+
+  $("visitProgressText").textContent =
+    total === 0
+      ? "No households match your filters."
+      : visited === total
+        ? "All households in this view have been visited."
+        : `${total - visited} households remaining to visit.`;
+}
+
+function applyHouseholdFilters() {
+  const searchText = $("householdSearch").value
+    .trim()
+    .toLowerCase();
+
+  const visitFilter = $("visitFilter").value;
+  const riskFilter = $("riskFilter").value;
+
+  document.querySelectorAll("#households .household-row")
+    .forEach(row => {
+      const text = row.textContent.toLowerCase();
+      const button = row.querySelector("[data-visit]");
+      const isVisited = button?.classList.contains("done") || false;
+
+      const matchesSearch = text.includes(searchText);
+
+      const matchesVisit =
+        visitFilter === "all" ||
+        (visitFilter === "visited" && isVisited) ||
+        (visitFilter === "pending" && !isVisited);
+
+      const matchesRisk =
+        riskFilter === "all" ||
+        row.classList.contains(riskFilter);
+
+      row.style.display =
+        matchesSearch && matchesVisit && matchesRisk ? "" : "none";
+    });
+
+  updateVisitProgress();
 }
 
 function calcWetBulb(T, RH) {
@@ -737,12 +1129,14 @@ async function runHistoricalReplay(dateStr) {
     $("wetbulb").textContent = `${maxWb}°C`;
     $("high").textContent = households.filter(h => h.risk === "High").length;
     $("source").textContent = `Archive (${dateStr})`;
+    updateSourceBanner("historical", dateStr);
     $("peakLabel").textContent = `Historical Peak: ${maxWb}°C at ${hourLabel(peakHour)}`;
 
     drawCurve(curve);
     computeSafeWorkWindow(curve);
     renderHouseholds(households);
     renderWardPlanner(households);
+    renderWardRiskMap(households);
 
     briefingText = `ऐतिहासिक मौसम डेटा: ${dateStr} को रायपुर में अधिकतम वेट-बल्ब तापमान ${maxWb} डिग्री सेल्सियस दर्ज किया गया था। इस स्थिति में उच्च जोखिम वाले घरों को तुरंत ओआरएस और सुरक्षा की आवश्यकता होती है।`;
     $("briefing").textContent = briefingText;
@@ -762,6 +1156,15 @@ async function loadScenario(scenario) {
     const data=await response.json();
     if(!response.ok) throw new Error(data.error||`Request failed (${response.status})`);
     const a=data.analysis||{};
+    
+    updateSourceBanner(
+      data.forecast_source === "simulated"
+        ? "simulated"
+        : scenario === "forecast"
+          ? "live"
+          : "unknown"
+    );
+
     $("temp").textContent=`${a.peak_temp_c ?? "—"}°C`;
     $("wetbulb").textContent=`${a.peak_wet_bulb_c ?? "—"}°C`;
     $("high").textContent=(data.households||[]).filter(h=>String(h.risk).toLowerCase()==="high").length;
@@ -770,8 +1173,10 @@ async function loadScenario(scenario) {
 
     drawCurve(a.curve||[]);
     computeSafeWorkWindow(a.curve||[]);
-    renderHouseholds(data.households||[]);
-    renderWardPlanner(data.households||[]);
+    renderHouseholds(data.households || []);
+    renderWardPlanner(data.households || []);
+    renderWardRiskMap(data.households || []);
+    applyHouseholdFilters();
     briefingText=data.briefing_hi||"हिंदी ब्रीफिंग उपलब्ध नहीं है।";
     $("briefing").textContent=briefingText;
     $("status").textContent=`Analysis complete: ${data.households?.length||0} records processed`;
@@ -785,6 +1190,59 @@ function clearBtnStyles() {
   $("coolBtn").className = "term-btn";
   $("liveBtn").className = "term-btn";
 }
+
+$("downloadCsvBtn").addEventListener("click", () => {
+  const rows = [
+    ...document.querySelectorAll("#households .household-row")
+  ].filter(row => row.style.display !== "none");
+
+  if (rows.length === 0) {
+    alert("No households to download.");
+    return;
+  }
+
+  const csvCell = value =>
+    `"${String(value ?? "").replace(/"/g, '""')}"`;
+
+  const csvRows = [[
+    "Household ID",
+    "Household Name",
+    "Ward",
+    "Risk Level",
+    "Visit Status",
+    "Reason"
+  ]];
+
+  rows.forEach(row => {
+    const button = row.querySelector("[data-visit]");
+    const id = button?.dataset.visit || "";
+    const name = row.querySelector(".row-main strong")?.textContent.trim() || "";
+    const text = row.querySelector(".row-main")?.textContent || "";
+    const wardMatch = text.match(/\[Ward ([^\]]+)\]/);
+    const ward = wardMatch ? wardMatch[1] : "";
+    const risk = ["high", "medium", "low"].find(level =>
+      row.classList.contains(level)
+    ) || "unknown";
+    const status = button?.classList.contains("done") ? "Visited" : "Pending";
+    const reason = row.querySelector(".row-meta span")?.textContent.trim() || "";
+
+    csvRows.push([id, name, ward, risk, status, reason]);
+  });
+
+  const csvContent = "\uFEFF" +
+    csvRows.map(row => row.map(csvCell).join(",")).join("\r\n");
+
+  const blob = new Blob([csvContent], {
+    type: "text/csv;charset=utf-8;"
+  });
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "mitanin-heat-desk-report.csv";
+  link.click();
+  URL.revokeObjectURL(url);
+});
 
 $("hotBtn").addEventListener("click",()=>{
   clearBtnStyles();
