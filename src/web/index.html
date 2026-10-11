@@ -1092,6 +1092,67 @@ function applyHouseholdFilters() {
   updateVisitProgress();
 }
 
+
+
+function updateVisitProgress() {
+  const rows = [
+    ...document.querySelectorAll("#households .household-row")
+  ];
+
+  const visibleRows = rows.filter(
+    row => row.style.display !== "none"
+  );
+
+  const visitedRows = visibleRows.filter(
+    row => row.querySelector("[data-visit]")?.classList.contains("done")
+  );
+
+  const total = visibleRows.length;
+  const visited = visitedRows.length;
+  const percentage = total === 0 ? 0 : (visited / total) * 100;
+
+  $("visitCount").textContent = `${visited} of ${total} visited`;
+  $("visitProgressBar").style.width = `${percentage}%`;
+
+  $("visitProgressText").textContent =
+    total === 0
+      ? "No households match your filters."
+      : visited === total
+        ? "All households in this view have been visited."
+        : `${total - visited} households remaining to visit.`;
+}
+
+function applyHouseholdFilters() {
+  const searchText = $("householdSearch").value
+    .trim()
+    .toLowerCase();
+
+  const visitFilter = $("visitFilter").value;
+  const riskFilter = $("riskFilter").value;
+
+  document.querySelectorAll("#households .household-row")
+    .forEach(row => {
+      const text = row.textContent.toLowerCase();
+      const button = row.querySelector("[data-visit]");
+      const isVisited = button?.classList.contains("done") || false;
+
+      const matchesSearch = text.includes(searchText);
+
+      const matchesVisit =
+        visitFilter === "all" ||
+        (visitFilter === "visited" && isVisited) ||
+        (visitFilter === "pending" && !isVisited);
+
+      const matchesRisk =
+        riskFilter === "all" ||
+        row.classList.contains(riskFilter);
+
+      row.style.display =
+        matchesSearch && matchesVisit && matchesRisk ? "" : "none";
+    });
+
+  updateVisitProgress();
+}
 function calcWetBulb(T, RH) {
   return T * Math.atan(0.151977 * Math.pow(RH + 8.313659, 0.5)) +
     Math.atan(T + RH) - Math.atan(RH - 1.676331) +
@@ -1190,6 +1251,10 @@ function clearBtnStyles() {
   $("coolBtn").className = "term-btn";
   $("liveBtn").className = "term-btn";
 }
+$("downloadCsvBtn").addEventListener("click", () => {
+  const rows = [
+    ...document.querySelectorAll("#households .household-row")
+  ].filter(row => row.style.display !== "none");
 
 $("downloadCsvBtn").addEventListener("click", () => {
   const rows = [
