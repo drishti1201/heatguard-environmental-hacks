@@ -384,6 +384,59 @@ body {
   margin-top: 10px;
 }
 
+
+/* Data Source Transparency Banner */
+.data-source-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 24px;
+  background: #f1f7f4;
+  border-bottom: 1px solid #cbded5;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.source-badge {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: #e5f3ef;
+  color: #086b5c;
+  border: 1px solid #b7d8cc;
+}
+
+.source-badge.simulated {
+  background: #fff3e0;
+  color: #9a4e00;
+  border-color: #f2ce9f;
+}
+
+.source-badge.historical {
+  background: #edf2f7;
+  color: #365b7d;
+  border-color: #cbd7e3;
+}
+
+.source-copy {
+  color: var(--ink-secondary);
+}
+
+.source-copy strong {
+  color: var(--ink-primary);
+}
+
+@media (max-width: 600px) {
+  .data-source-banner {
+    padding: 12px 16px;
+  }
+}
+
+
 @media (max-width: 980px) {
   .console-split { grid-template-columns: 1fr; }
   .pane-left { border-right: none; }
@@ -439,6 +492,22 @@ body {
     </div>
   </div>
 
+  
+<!-- Data Source Transparency -->
+<div class="data-source-banner" role="status" aria-live="polite">
+  <span class="source-badge simulated" id="sourceBadge">
+    SIMULATED DATA
+  </span>
+  <div class="source-copy">
+    <strong id="sourceTitle">Demonstration scenario</strong>
+    <span id="sourceDescription">
+      Synthetic weather conditions are being used to demonstrate household
+      risk ranking. These are not live measurements or official alerts.
+    </span>
+  </div>
+</div>
+
+
   <!-- KPI Ticker -->
   <div class="kpi-ticker">
     <div class="kpi-cell">
@@ -458,6 +527,27 @@ body {
       <div class="value" id="source" style="font-size:16px; padding-top:6px;">—</div>
     </div>
   </div>
+
+
+  <!-- Field Visit Progress -->
+  <div class="pane-section" id="visitProgress" style="background:#fcfbf8; border-bottom:1px solid #e3ded5;">
+    <div class="section-tagline">
+      <h3>Field Visit Progress</h3>
+      <span class="meta" id="visitCount">0 of 0 visited</span>
+    </div>
+
+    <div style="height:10px; background:#e3ded5; border-radius:3px; overflow:hidden;">
+      <div id="visitProgressBar"
+          style="height:100%; width:0%; background:#086b5c; transition:width 0.3s;">
+      </div>
+    </div>
+
+    <p id="visitProgressText"
+      style="font-size:12px; color:#575e5b; margin:8px 0 0;">
+      Mark households as visited to track field progress.
+    </p>
+  </div>
+
 
   <!-- Operational Advisory Strip -->
   <div class="work-advisory">
@@ -523,6 +613,29 @@ body {
           <span class="meta">Prioritized by multi-variable heat vulnerability index</span>
         </div>
       </div>
+      
+      <div style="display:flex; gap:10px; flex-wrap:wrap; padding:12px 16px; background:#fcfbf8; border-bottom:1px solid #e3ded5;">
+        <input
+          id="householdSearch"
+          type="search"
+          placeholder="Search name or household ID..."
+          aria-label="Search households"
+          oninput="applyHouseholdFilters()"
+          style="flex:1; min-width:200px; padding:10px; border:1px solid #d8d2c8; border-radius:4px; font:inherit;"
+        />
+
+        <select
+          id="visitFilter"
+          aria-label="Filter visit status"
+          onchange="applyHouseholdFilters()"
+          style="padding:10px; border:1px solid #d8d2c8; border-radius:4px; background:#fff; font:inherit;"
+        >
+          <option value="all">All households</option>
+          <option value="pending">Pending visits only</option>
+          <option value="visited">Visited only</option>
+        </select>
+      </div>
+
       <div class="queue-container" id="households">
         <div style="padding:20px; text-align:center; color:var(--ink-subtle);">Loading priority queue...</div>
       </div>
@@ -534,6 +647,43 @@ body {
 const API_BASE = "https://jiy3g526lmitpenyg25tvbbhze0dsajn.lambda-url.ap-southeast-2.on.aws";
 const $ = id => document.getElementById(id);
 let briefingText = "";
+
+
+function updateSourceBanner(mode, dateStr = "") {
+  const badge = $("sourceBadge");
+  const title = $("sourceTitle");
+  const description = $("sourceDescription");
+
+  badge.className = "source-badge";
+
+  if (mode === "simulated") {
+    badge.textContent = "SIMULATED DATA";
+    badge.classList.add("simulated");
+    title.textContent = "Demonstration scenario — not a real alert. ";
+    description.textContent =
+      "Synthetic hot-day or cool-day conditions are used to demonstrate " +
+      "the risk-ranking workflow. They are not live measurements or official warnings.";
+  } else if (mode === "live") {
+    badge.textContent = "LIVE FORECAST";
+    title.textContent = "Open-Meteo weather forecast. ";
+    description.textContent =
+      "Weather forecast data is used to calculate wet-bulb conditions. " +
+      "Forecasts can change and are not official emergency alerts.";
+  } else if (mode === "historical") {
+    badge.textContent = "HISTORICAL DATA";
+    badge.classList.add("historical");
+    title.textContent = `Past weather observations — ${dateStr}. `;
+    description.textContent =
+      "Weather data for the selected date is used for retrospective analysis, " +
+      "not as a current forecast or official alert.";
+  } else {
+    badge.textContent = "SOURCE UNKNOWN";
+    title.textContent = "Data source could not be confirmed. ";
+    description.textContent =
+      "Check the request status before interpreting the results.";
+  }
+}
+
 
 function updateClock() {
   const now = new Date();
@@ -669,6 +819,27 @@ function drawCurve(points) {
   });
 }
 
+
+const VISITED_STORAGE_KEY = "mitaninHeatDeskVisited";
+
+function getVisitedHouseholds() {
+  try {
+    return new Set(
+      JSON.parse(localStorage.getItem(VISITED_STORAGE_KEY) || "[]")
+    );
+  } catch {
+    return new Set();
+  }
+}
+
+function saveVisitedHouseholds(visited) {
+  localStorage.setItem(
+    VISITED_STORAGE_KEY,
+    JSON.stringify([...visited])
+  );
+}
+
+
 function renderHouseholds(households) {
   const container=$("households");
   if (!Array.isArray(households) || !households.length) {
@@ -694,11 +865,90 @@ function renderHouseholds(households) {
     </div>`;
   }).join("");
 
-  container.querySelectorAll("[data-visit]").forEach(btn=>btn.addEventListener("click",()=>{
-    btn.classList.toggle("done");
-    btn.textContent=btn.classList.contains("done")?"✓ Done":"Mark Visited";
-  }));
+  
+  
+const visited = getVisitedHouseholds();
+
+container.querySelectorAll("[data-visit]").forEach(btn => {
+  const id = btn.dataset.visit;
+
+  const isVisited = visited.has(id);
+  btn.classList.toggle("done", isVisited);
+  btn.textContent = isVisited ? "✓ Done" : "Mark Visited";
+
+  btn.addEventListener("click", () => {
+    if (visited.has(id)) {
+      visited.delete(id);
+    } else {
+      visited.add(id);
+    }
+
+    saveVisitedHouseholds(visited);
+
+    const done = visited.has(id);
+    btn.classList.toggle("done", done);
+    btn.textContent = done ? "✓ Done" : "Mark Visited";
+
+    updateVisitProgress();
+  });
+});
+
+
+  updateVisitProgress();
+
 }
+
+
+
+function updateVisitProgress() {
+  const rows = [
+    ...document.querySelectorAll("#households .household-row")
+  ].filter(row => row.style.display !== "none");
+
+  const total = 200;
+  const visited = new Set(
+    JSON.parse(localStorage.getItem("mitaninHeatDeskVisited") || "[]")
+  ).size;
+
+  const percentage = Math.min(100, (visited / total) * 100);
+
+  $("visitCount").textContent = `${visited} of ${total} visited`;
+  $("visitProgressBar").style.width = `${percentage}%`;
+
+  $("visitProgressText").textContent =
+    total === 0
+      ? "No households match your filters."
+      : visited === total
+        ? "All households in this view have been visited."
+        : `${total - visited} households remaining to visit.`;
+}
+
+
+
+function applyHouseholdFilters() {
+  const searchText = $("householdSearch").value
+    .trim()
+    .toLowerCase();
+
+  const visitFilter = $("visitFilter").value;
+
+  document.querySelectorAll("#households .household-row")
+    .forEach(row => {
+      const text = row.textContent.toLowerCase();
+      const button = row.querySelector("[data-visit]");
+      const isVisited = button?.classList.contains("done") || false;
+
+      const matchesSearch = text.includes(searchText);
+      const matchesVisit =
+        visitFilter === "all" ||
+        (visitFilter === "visited" && isVisited) ||
+        (visitFilter === "pending" && !isVisited);
+
+      row.style.display =
+        matchesSearch && matchesVisit ? "" : "none";
+    });
+}
+
 
 function calcWetBulb(T, RH) {
   return T * Math.atan(0.151977 * Math.pow(RH + 8.313659, 0.5)) +
@@ -737,6 +987,7 @@ async function runHistoricalReplay(dateStr) {
     $("wetbulb").textContent = `${maxWb}°C`;
     $("high").textContent = households.filter(h => h.risk === "High").length;
     $("source").textContent = `Archive (${dateStr})`;
+    updateSourceBanner("historical", dateStr);
     $("peakLabel").textContent = `Historical Peak: ${maxWb}°C at ${hourLabel(peakHour)}`;
 
     drawCurve(curve);
@@ -762,6 +1013,15 @@ async function loadScenario(scenario) {
     const data=await response.json();
     if(!response.ok) throw new Error(data.error||`Request failed (${response.status})`);
     const a=data.analysis||{};
+    
+    updateSourceBanner(
+      data.forecast_source === "simulated"
+        ? "simulated"
+        : scenario === "forecast"
+          ? "live"
+          : "unknown"
+    );
+
     $("temp").textContent=`${a.peak_temp_c ?? "—"}°C`;
     $("wetbulb").textContent=`${a.peak_wet_bulb_c ?? "—"}°C`;
     $("high").textContent=(data.households||[]).filter(h=>String(h.risk).toLowerCase()==="high").length;
