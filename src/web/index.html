@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HeatGuard — Frontline Environmental Triage</title>
+<title>Mitanin Heat Desk — Frontline Environmental Triage</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -32,6 +32,7 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
 body {
   background-color: var(--bg-app);
   font-family: 'Plus Jakarta Sans', sans-serif;
@@ -60,7 +61,7 @@ body {
 .brand-icon {
   width: 32px;
   height: 32px;
-  background: var(--brand-orange);
+  background: #15803d;
   border-radius: 9px;
   display: grid;
   place-items: center;
@@ -241,34 +242,8 @@ body {
     transparent 12px
   );
 }
-.hour-tag {
-  position: absolute;
-  bottom: 4px;
-  width: 100%;
-  text-align: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-secondary);
-}
 
-/* Floating Tooltip inside Hero Chart */
-.chart-tooltip-badge {
-  position: absolute;
-  top: 30%;
-  left: 45%;
-  background: rgba(17, 24, 39, 0.92);
-  color: white;
-  padding: 8px 14px;
-  border-radius: var(--radius-pill);
-  font-size: 11.5px;
-  font-weight: 600;
-  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.15);
-  pointer-events: none;
-  z-index: 10;
-  white-space: nowrap;
-}
-
-/* Search Prompt Input Inside Hero Card */
+/* Inquiry Prompt Box */
 .prompt-inquiry-box {
   background: #f8fafc;
   border: 1px solid var(--border-light);
@@ -568,8 +543,8 @@ body {
   <!-- Top App Navigation -->
   <header class="zentra-navbar">
     <div class="brand-logo">
-      <div class="brand-icon">⚡</div>
-      <span>zentra heat</span>
+      <div class="brand-icon">🌿</div>
+      <span>mitanin heat desk</span>
     </div>
 
     <nav class="nav-pills">
@@ -588,16 +563,14 @@ body {
   </header>
 
   <!-- Title & Date Selector Strip -->
-  <div class="overview-header">
+  <div class="overview-header" id="sectionOverview">
     <div class="overview-title">
       <h1>Overview</h1>
       <span class="chain-badge">🔗</span>
     </div>
 
     <div class="date-selector-pill">
-      <span>📅 Jan 01 – July 31 ▾</span>
-      <span style="color:var(--text-muted);">|</span>
-      <span>Replay Date:</span>
+      <span>Replay Heatwave Date:</span>
       <input type="date" id="histDate" min="2022-01-01" value="2024-05-25">
       <button class="ctrl-pill-btn" id="histBtn" style="padding:4px 10px; font-size:11.5px;">Replay</button>
     </div>
@@ -705,8 +678,8 @@ body {
     <div class="banner-text" id="workWindowText">Calculating safe working hours based on hourly wet-bulb conditions...</div>
   </div>
 
-  <!-- Lower Analytics Trio Grid -->
-  <div class="lower-grid">
+  <!-- Lower Analytics Trio Grid (Wards Section) -->
+  <div class="lower-grid" id="sectionWards">
     <!-- Step Chart / Vulnerability Share -->
     <div class="zentra-card">
       <div class="card-header-bar">
@@ -752,9 +725,9 @@ body {
         <div class="card-title">Cool-Roof Priority (Wards)</div>
         <button class="dots-btn">•••</button>
       </div>
-      <div style="font-size:24px; font-weight:800; margin-bottom:4px;">Ward 1 & 2</div>
+      <div style="font-size:24px; font-weight:800; margin-bottom:4px;" id="coolRoofWards">Ward 1 & 2</div>
       <span style="font-size:12px; color:var(--text-muted);">Top municipal resource candidates</span>
-      <div style="display:flex; gap:8px; margin-top:16px; flex-wrap:wrap;">
+      <div style="display:flex; gap:8px; margin-top:16px; flex-wrap:wrap;" id="wardPillsWrap">
         <span style="background:#fee2e2; color:#991b1b; padding:4px 10px; border-radius:var(--radius-pill); font-size:11px; font-weight:700;">Ward 1: 45% Tin</span>
         <span style="background:#fee2e2; color:#991b1b; padding:4px 10px; border-radius:var(--radius-pill); font-size:11px; font-weight:700;">Ward 2: 40% Tin</span>
         <span style="background:#f3f4f6; color:#4b5563; padding:4px 10px; border-radius:var(--radius-pill); font-size:11px; font-weight:700;">Ward 3: Standard</span>
@@ -762,8 +735,8 @@ body {
     </div>
   </div>
 
-  <!-- Priority Queue Card -->
-  <div class="zentra-card household-queue-card">
+  <!-- Priority Queue Card (Triage Section) -->
+  <div class="zentra-card household-queue-card" id="sectionTriage">
     <div class="card-header-bar">
       <div>
         <div class="card-title">Frontline Priority Triage Queue</div>
@@ -794,8 +767,8 @@ body {
     </div>
   </div>
 
-  <!-- Field Briefing Box -->
-  <div class="zentra-card" style="margin-top:20px;">
+  <!-- Field Briefing Box (Briefing Section) -->
+  <div class="zentra-card" style="margin-top:20px;" id="sectionBriefing">
     <div class="card-header-bar">
       <div class="card-title">Field Audio Briefing (Hindi)</div>
       <button class="dots-btn">•••</button>
@@ -808,6 +781,21 @@ const API_BASE = "https://jiy3g526lmitpenyg25tvbbhze0dsajn.lambda-url.ap-southea
 const $ = id => document.getElementById(id);
 let briefingText = "";
 window.currentHouseholds = [];
+
+// Navigation tabs
+function setNavActive(activeId, targetSectionId) {
+  document.querySelectorAll(".nav-item").forEach(btn => btn.classList.remove("active"));
+  $(activeId).classList.add("active");
+  const target = $(targetSectionId);
+  if (target) {
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+$("tabOverview").addEventListener("click", () => setNavActive("tabOverview", "sectionOverview"));
+$("tabWards").addEventListener("click", () => setNavActive("tabWards", "sectionWards"));
+$("tabTriage").addEventListener("click", () => setNavActive("tabTriage", "sectionTriage"));
+$("tabBriefing").addEventListener("click", () => setNavActive("tabBriefing", "sectionBriefing"));
 
 function updateClock() {
   const now = new Date();
@@ -840,7 +828,7 @@ function renderVolumetricColumns(curve) {
   const maxWb = Math.max(...curve.map(c => Number(c.wet_bulb_c)));
   const minWb = Math.min(...curve.map(c => Number(c.wet_bulb_c))) - 2;
 
-  container.innerHTML = curve.slice(0, 5).map((p, i) => {
+  container.innerHTML = curve.slice(0, 5).map((p) => {
     const wb = Number(p.wet_bulb_c);
     const heightPct = Math.max(25, Math.min(100, ((wb - minWb) / (maxWb - minWb + 2)) * 100));
     const isPeak = wb === maxWb;
@@ -968,6 +956,54 @@ function calcWetBulb(T, RH) {
     0.00391838 * Math.pow(RH, 1.5) * Math.atan(0.023101 * RH) - 4.686035;
 }
 
+// Historical Replay
+async function runHistoricalReplay(dateStr) {
+  $("forecastSyncStatus").textContent = `Archive query: ${dateStr}`;
+  try {
+    const lat = 21.25, lon = 81.63;
+    const archiveUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${dateStr}&end_date=${dateStr}&hourly=temperature_2m,relative_humidity_2m&timezone=Asia%2FKolkata`;
+    const res = await fetch(archiveUrl);
+    const wData = await res.json();
+    if (!wData.hourly) throw new Error("No archive data returned.");
+
+    const temps = wData.hourly.temperature_2m.slice(9, 18);
+    const rhs = wData.hourly.relative_humidity_2m.slice(9, 18);
+    const curve = temps.map((t, i) => {
+      const wb = Math.round(calcWetBulb(t, rhs[i]) * 10) / 10;
+      return { hour: 9 + i, temp_c: t, wet_bulb_c: wb };
+    });
+
+    const maxTemp = Math.max(...temps);
+    const maxWb = Math.max(...curve.map(c => c.wet_bulb_c));
+    const peakHour = curve.find(c => c.wet_bulb_c === maxWb)?.hour || 13;
+
+    const baseResp = await fetch(`${API_BASE}?mitanin=ALL&demo=cool`);
+    const baseJson = await baseResp.json();
+    const households = (baseJson.households || []).map(h => {
+      const isHigh = maxWb >= 29.5 && ((h.reason_en||"").toLowerCase().includes("tin") || (h.reason_en||"").toLowerCase().includes("roof") || h.score > 60);
+      return { ...h, risk: isHigh ? "High" : (maxWb >= 27.5 ? "Medium" : "Low") };
+    });
+
+    $("metricPeakVal").textContent = `${maxWb}°C`;
+    $("metricAirTemp").textContent = `${maxTemp} °C`;
+    $("promptPeakTag").textContent = `${maxWb}°C`;
+    $("highRiskStat").textContent = households.filter(h => h.risk === "High").length;
+    $("metricSource").textContent = `Historical Archive (${dateStr})`;
+    $("peakLabel").textContent = `Historical Peak at ${hourLabel(peakHour)}`;
+
+    renderVolumetricColumns(curve);
+    computeSafeWorkWindow(curve);
+    renderHouseholds(households);
+    applyHouseholdFilters();
+
+    briefingText = `ऐतिहासिक मौसम डेटा: ${dateStr} को रायपुर में अधिकतम वेट-बल्ब तापमान ${maxWb} डिग्री सेल्सियस दर्ज किया गया था। इस स्थिति में उच्च जोखिम वाले घरों को तुरंत ओआरएस और सुरक्षा की आवश्यकता होती है।`;
+    $("briefing").textContent = briefingText;
+    $("forecastSyncStatus").textContent = `Archive Replay (${dateStr})`;
+  } catch(err) {
+    alert("Archive query failed: " + err.message);
+  }
+}
+
 async function loadScenario(scenario) {
   const mitaninVal = $("mitanin").value;
   const url = `${API_BASE}?mitanin=${encodeURIComponent(mitaninVal)}&demo=${encodeURIComponent(scenario)}`;
@@ -1021,6 +1057,12 @@ $("liveBtn").addEventListener("click", () => {
   loadScenario("forecast");
 });
 $("mitanin").addEventListener("change", () => loadScenario("hot"));
+
+$("histBtn").addEventListener("click", () => {
+  const d = $("histDate").value;
+  if (!d) { alert("Select a date."); return; }
+  runHistoricalReplay(d);
+});
 
 $("speakBtn").addEventListener("click", () => {
   if (!briefingText) return;
