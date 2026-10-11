@@ -88,6 +88,7 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
 }
+.nav-item:hover { color: var(--text-primary); }
 .nav-item.active {
   background: #111827;
   color: #ffffff;
@@ -135,7 +136,12 @@ body {
   color: var(--text-muted);
   cursor: pointer;
   font-size: 18px;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s;
 }
+.chain-badge:hover { color: var(--brand-blue); background: var(--brand-blue-soft); }
+
 .date-selector-pill {
   display: flex;
   align-items: center;
@@ -173,6 +179,7 @@ body {
   padding: 24px;
   border: 1px solid rgba(229, 231, 235, 0.7);
   box-shadow: var(--shadow-card);
+  position: relative;
 }
 .card-header-bar {
   display: flex;
@@ -191,7 +198,10 @@ body {
   border: none;
   font-size: 18px;
   cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
 }
+.dots-btn:hover { background: #f3f4f6; color: var(--text-primary); }
 
 /* Volumetric Stepped Heat Curve */
 .hourly-columns {
@@ -210,7 +220,10 @@ body {
   justify-content: flex-end;
   height: 100%;
   position: relative;
+  cursor: pointer;
+  transition: transform 0.2s ease;
 }
+.hour-col:hover { transform: translateY(-4px); }
 .col-meta {
   margin-bottom: 8px;
 }
@@ -227,10 +240,11 @@ body {
 .col-bar {
   width: 100%;
   border-radius: 12px 12px 4px 4px;
-  transition: height 0.4s ease;
+  transition: height 0.4s ease, filter 0.2s ease;
   position: relative;
   overflow: hidden;
 }
+.hour-col:hover .col-bar { filter: brightness(1.08); }
 .bar-hatch {
   width: 100%;
   height: 100%;
@@ -311,6 +325,7 @@ body {
 .stat-bar-fill {
   height: 100%;
   border-radius: var(--radius-pill);
+  transition: width 0.5s ease;
 }
 
 /* Controls Pill Bar */
@@ -357,7 +372,7 @@ body {
   color: var(--text-secondary);
   transition: all 0.15s ease;
 }
-.ctrl-pill-btn:hover { background: #e5e7eb; }
+.ctrl-pill-btn:hover { background: #e5e7eb; color: var(--text-primary); }
 .ctrl-pill-btn.active-hot { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
 .ctrl-pill-btn.active-cool { background: #e0f2fe; color: #0369a1; border-color: #7dd3fc; }
 .ctrl-pill-btn.active-live { background: #111827; color: white; }
@@ -406,6 +421,17 @@ body {
   width: 100%;
   height: 100%;
 }
+
+.ward-filter-badge {
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: transform 0.15s, filter 0.15s;
+}
+.ward-filter-badge:hover { transform: scale(1.05); filter: brightness(0.95); }
 
 /* Priority Queue List */
 .household-queue-card {
@@ -509,6 +535,7 @@ body {
   white-space: nowrap;
   transition: all 0.2s ease;
 }
+.visit-action-btn:hover { background: #f3f4f6; }
 .visit-action-btn.done {
   background: #111827;
   color: white;
@@ -527,6 +554,35 @@ body {
   color: #374151;
   white-space: pre-wrap;
 }
+
+/* Simple Popover Menu for 3 dots */
+.popover-menu {
+  position: absolute;
+  top: 50px;
+  right: 20px;
+  background: white;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  padding: 6px;
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 100;
+  min-width: 170px;
+}
+.popover-item {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+.popover-item:hover { background: #f3f4f6; }
 
 @media (max-width: 1024px) {
   .dashboard-grid { grid-template-columns: 1fr; }
@@ -566,13 +622,13 @@ body {
   <div class="overview-header" id="sectionOverview">
     <div class="overview-title">
       <h1>Overview</h1>
-      <span class="chain-badge">🔗</span>
+      <span class="chain-badge" id="shareLinkBtn" title="Copy App URL">🔗</span>
     </div>
 
     <div class="date-selector-pill">
       <span>Replay Heatwave Date:</span>
       <input type="date" id="histDate" min="2022-01-01" value="2024-05-25">
-      <button class="ctrl-pill-btn" id="histBtn" style="padding:4px 10px; font-size:11.5px;">Replay</button>
+      <button class="ctrl-pill-btn" id="histBtn" style="padding:4px 12px; font-size:12px;">Replay</button>
     </div>
   </div>
 
@@ -585,7 +641,12 @@ body {
           <div class="card-title">Wet-Bulb Thermodynamic Curve</div>
           <span style="font-size:12px; color:var(--text-muted);" id="peakLabel">Peak wet-bulb tracking</span>
         </div>
-        <button class="dots-btn">•••</button>
+        <button class="dots-btn" data-menu="menuHero">•••</button>
+        <div class="popover-menu" id="menuHero">
+          <button class="popover-item" onclick="loadScenario('hot')">🔥 Reload Hot Day</button>
+          <button class="popover-item" onclick="loadScenario('cool')">❄️ Reload Cool Day</button>
+          <button class="popover-item" onclick="loadScenario('forecast')">📡 Query Live</button>
+        </div>
       </div>
 
       <!-- Volumetric Stepped Columns -->
@@ -596,7 +657,7 @@ body {
       <!-- Inquiry Prompt Box -->
       <div class="prompt-inquiry-box">
         <span class="prompt-icon">✨</span>
-        <span class="prompt-text">Predicted peak heat stress window occurs between <strong>12:00 PM and 3:00 PM</strong> at <span class="prompt-tag" id="promptPeakTag">32.7°C</span>. Plan field visits early.</span>
+        <span class="prompt-text" id="promptText">Predicted peak heat stress window occurs between <strong>12:00 PM and 3:00 PM</strong> at <span class="prompt-tag" id="promptPeakTag">32.7°C</span>. Plan field visits early.</span>
       </div>
     </div>
 
@@ -605,7 +666,11 @@ body {
       <div>
         <div class="card-header-bar" style="margin-bottom:8px;">
           <div class="card-title">Peak Heat Stress</div>
-          <button class="dots-btn">•••</button>
+          <button class="dots-btn" data-menu="menuMetric">•••</button>
+          <div class="popover-menu" id="menuMetric">
+            <button class="popover-item" onclick="resetVisits()">🔄 Reset Visited Cache</button>
+            <button class="popover-item" onclick="$('speakBtn').click()">🔊 Trigger Audio</button>
+          </div>
         </div>
         <div class="big-stat-val" id="metricPeakVal">32.7°C</div>
 
@@ -616,17 +681,17 @@ body {
               <strong id="metricAirTemp">38.0 °C</strong>
             </div>
             <div class="stat-bar-track">
-              <div class="stat-bar-fill" style="width: 85%; background: var(--brand-orange);"></div>
+              <div class="stat-bar-fill" id="barAirTemp" style="width: 85%; background: var(--brand-orange);"></div>
             </div>
           </div>
 
           <div class="stat-progress-item">
             <div class="stat-item-label">
               <span>Danger Reference (31°C)</span>
-              <span style="color:var(--accent-red); font-weight:700;">Exceeded</span>
+              <span id="dangerRefBadge" style="color:var(--accent-red); font-weight:700;">Exceeded</span>
             </div>
             <div class="stat-bar-track">
-              <div class="stat-bar-fill" style="width: 95%; background: var(--accent-red);"></div>
+              <div class="stat-bar-fill" id="barDanger" style="width: 95%; background: var(--accent-red);"></div>
             </div>
           </div>
 
@@ -636,7 +701,7 @@ body {
               <span style="color:var(--brand-cyan); font-weight:700;">Active</span>
             </div>
             <div class="stat-bar-track">
-              <div class="stat-bar-fill" style="width: 70%; background: var(--brand-cyan);"></div>
+              <div class="stat-bar-fill" id="barWatch" style="width: 70%; background: var(--brand-cyan);"></div>
             </div>
           </div>
         </div>
@@ -684,7 +749,11 @@ body {
     <div class="zentra-card">
       <div class="card-header-bar">
         <div class="card-title">Roof Vulnerability</div>
-        <button class="dots-btn">•••</button>
+        <button class="dots-btn" data-menu="menuRoof">•••</button>
+        <div class="popover-menu" id="menuRoof">
+          <button class="popover-item" onclick="filterByReason('tin')">Filter Tin Roofs</button>
+          <button class="popover-item" onclick="filterByReason('')">Show All Roofs</button>
+        </div>
       </div>
       <div style="font-size:24px; font-weight:800; margin-bottom:4px;" id="tinRoofStat">42%</div>
       <span style="font-size:12px; color:var(--text-muted);">Tin or asbestos roof density</span>
@@ -700,12 +769,16 @@ body {
     <div class="zentra-card">
       <div class="card-header-bar">
         <div class="card-title">High-Risk Caseload</div>
-        <button class="dots-btn">•••</button>
+        <button class="dots-btn" data-menu="menuRisk">•••</button>
+        <div class="popover-menu" id="menuRisk">
+          <button class="popover-item" onclick="$('riskFilter').value='high'; applyHouseholdFilters();">Filter High Risk Only</button>
+          <button class="popover-item" onclick="$('riskFilter').value='all'; applyHouseholdFilters();">Clear Filter</button>
+        </div>
       </div>
       <div style="font-size:24px; font-weight:800; margin-bottom:4px; color:var(--accent-red);" id="highRiskStat">100</div>
       <span style="font-size:12px; color:var(--text-muted);">Households requiring urgent triage</span>
       <div class="step-chart-container">
-        <svg class="sparkline-svg" viewBox="0 0 200 60">
+        <svg class="sparkline-svg" viewBox="0 0 200 60" id="matrixBarsWrap">
           <rect x="10" y="25" width="10" height="35" rx="3" fill="#2563eb" />
           <rect x="30" y="15" width="10" height="45" rx="3" fill="#2563eb" />
           <rect x="50" y="30" width="10" height="30" rx="3" fill="#2563eb" />
@@ -723,14 +796,19 @@ body {
     <div class="zentra-card">
       <div class="card-header-bar">
         <div class="card-title">Cool-Roof Priority (Wards)</div>
-        <button class="dots-btn">•••</button>
+        <button class="dots-btn" data-menu="menuWard">•••</button>
+        <div class="popover-menu" id="menuWard">
+          <button class="popover-item" onclick="filterWardDirect('M01')">Select Ward 1</button>
+          <button class="popover-item" onclick="filterWardDirect('M02')">Select Ward 2</button>
+          <button class="popover-item" onclick="filterWardDirect('ALL')">Select All Wards</button>
+        </div>
       </div>
       <div style="font-size:24px; font-weight:800; margin-bottom:4px;" id="coolRoofWards">Ward 1 & 2</div>
-      <span style="font-size:12px; color:var(--text-muted);">Top municipal resource candidates</span>
+      <span style="font-size:12px; color:var(--text-muted);">Top municipal resource candidates (Click pill to filter)</span>
       <div style="display:flex; gap:8px; margin-top:16px; flex-wrap:wrap;" id="wardPillsWrap">
-        <span style="background:#fee2e2; color:#991b1b; padding:4px 10px; border-radius:var(--radius-pill); font-size:11px; font-weight:700;">Ward 1: 45% Tin</span>
-        <span style="background:#fee2e2; color:#991b1b; padding:4px 10px; border-radius:var(--radius-pill); font-size:11px; font-weight:700;">Ward 2: 40% Tin</span>
-        <span style="background:#f3f4f6; color:#4b5563; padding:4px 10px; border-radius:var(--radius-pill); font-size:11px; font-weight:700;">Ward 3: Standard</span>
+        <span class="ward-filter-badge" style="background:#fee2e2; color:#991b1b;" onclick="filterWardDirect('M01')">Ward 1: 45% Tin</span>
+        <span class="ward-filter-badge" style="background:#fee2e2; color:#991b1b;" onclick="filterWardDirect('M02')">Ward 2: 40% Tin</span>
+        <span class="ward-filter-badge" style="background:#f3f4f6; color:#4b5563;" onclick="filterWardDirect('M03')">Ward 3: Standard</span>
       </div>
     </div>
   </div>
@@ -771,7 +849,11 @@ body {
   <div class="zentra-card" style="margin-top:20px;" id="sectionBriefing">
     <div class="card-header-bar">
       <div class="card-title">Field Audio Briefing (Hindi)</div>
-      <button class="dots-btn">•••</button>
+      <button class="dots-btn" data-menu="menuBriefing">•••</button>
+      <div class="popover-menu" id="menuBriefing">
+        <button class="popover-item" onclick="$('speakBtn').click()">🔊 Play Audio</button>
+        <button class="popover-item" onclick="navigator.clipboard.writeText(briefingText); alert('Briefing copied!')">📋 Copy Text</button>
+      </div>
     </div>
     <div class="briefing-narrative-box" id="briefing">परिणाम लोड हो रहे हैं...</div>
   </div>
@@ -782,7 +864,7 @@ const $ = id => document.getElementById(id);
 let briefingText = "";
 window.currentHouseholds = [];
 
-// Navigation tabs
+// 1. Navigation Tab Switching with active states
 function setNavActive(activeId, targetSectionId) {
   document.querySelectorAll(".nav-item").forEach(btn => btn.classList.remove("active"));
   $(activeId).classList.add("active");
@@ -797,6 +879,30 @@ $("tabWards").addEventListener("click", () => setNavActive("tabWards", "sectionW
 $("tabTriage").addEventListener("click", () => setNavActive("tabTriage", "sectionTriage"));
 $("tabBriefing").addEventListener("click", () => setNavActive("tabBriefing", "sectionBriefing"));
 
+// 2. Share Link Button
+$("shareLinkBtn").addEventListener("click", () => {
+  navigator.clipboard.writeText(window.location.href);
+  const orig = $("shareLinkBtn").textContent;
+  $("shareLinkBtn").textContent = "✓ Copied!";
+  setTimeout(() => { $("shareLinkBtn").textContent = orig; }, 1800);
+});
+
+// 3. Dot Menu Toggle Support
+document.querySelectorAll(".dots-btn").forEach(btn => {
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const menuId = btn.getAttribute("data-menu");
+    const menu = $(menuId);
+    const isShown = menu.style.display === "flex";
+    document.querySelectorAll(".popover-menu").forEach(m => m.style.display = "none");
+    menu.style.display = isShown ? "none" : "flex";
+  });
+});
+document.addEventListener("click", () => {
+  document.querySelectorAll(".popover-menu").forEach(m => m.style.display = "none");
+});
+
+// 4. Live Clock
 function updateClock() {
   const now = new Date();
   const options = { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: "Asia/Kolkata" };
@@ -818,7 +924,7 @@ function hourLabel(h) {
   return `${num > 12 ? num - 12 : num}${num >= 12 ? "pm" : "am"}`;
 }
 
-// Render Volumetric Columns
+// 5. Render Interactive Volumetric Columns
 function renderVolumetricColumns(curve) {
   const container = $("hourlyColumnsWrap");
   if (!Array.isArray(curve) || curve.length === 0) {
@@ -837,7 +943,7 @@ function renderVolumetricColumns(curve) {
       : 'linear-gradient(180deg, #60a5fa 0%, #93c5fd 100%)';
 
     return `
-      <div class="hour-col">
+      <div class="hour-col" onclick="inspectHour(${p.hour}, ${wb.toFixed(1)})" title="Click to inspect ${hourLabel(p.hour)} conditions">
         <div class="col-meta">
           <div class="col-label">${hourLabel(p.hour)}</div>
           <div class="col-value">${wb.toFixed(1)}°</div>
@@ -848,6 +954,12 @@ function renderVolumetricColumns(curve) {
       </div>
     `;
   }).join("");
+}
+
+function inspectHour(hour, wb) {
+  $("promptText").innerHTML = `Selected Hour: <strong>${hourLabel(hour)}</strong> at <span class="prompt-tag">${wb}°C</span> wet-bulb. Frontline visits during this window should focus on shaded rest and ORS distribution.`;
+  // Scroll to triage
+  $("tabTriage").click();
 }
 
 function computeSafeWorkWindow(curve) {
@@ -873,6 +985,11 @@ function getVisitedHouseholds() {
 function saveVisitedHouseholds(visited) {
   localStorage.setItem(VISITED_STORAGE_KEY, JSON.stringify([...visited]));
 }
+function resetVisits() {
+  localStorage.removeItem(VISITED_STORAGE_KEY);
+  renderHouseholds(window.currentHouseholds);
+  alert("Visited cache cleared!");
+}
 
 function renderHouseholds(households) {
   const container = $("households");
@@ -890,7 +1007,7 @@ function renderHouseholds(households) {
     const isVisited = visited.has(String(h.id));
 
     return `
-      <div class="queue-row ${cls}">
+      <div class="queue-row ${cls}" data-reason="${escapeHtml((h.reason_en||'').toLowerCase())}">
         <div class="row-info-wrap">
           <div class="row-header">
             <span class="row-name">${i+1}. ${escapeHtml(h.name || h.id)}</span>
@@ -950,21 +1067,33 @@ function applyHouseholdFilters() {
   updateVisitProgress();
 }
 
+function filterByReason(term) {
+  $("householdSearch").value = term;
+  applyHouseholdFilters();
+  $("tabTriage").click();
+}
+
+function filterWardDirect(wardVal) {
+  $("mitanin").value = wardVal;
+  loadScenario("hot");
+  $("tabTriage").click();
+}
+
 function calcWetBulb(T, RH) {
   return T * Math.atan(0.151977 * Math.pow(RH + 8.313659, 0.5)) +
     Math.atan(T + RH) - Math.atan(RH - 1.676331) +
     0.00391838 * Math.pow(RH, 1.5) * Math.atan(0.023101 * RH) - 4.686035;
 }
 
-// Historical Replay
+// 6. Real Historical Replay from Open-Meteo
 async function runHistoricalReplay(dateStr) {
-  $("forecastSyncStatus").textContent = `Archive query: ${dateStr}`;
+  $("forecastSyncStatus").textContent = `Archive Query: ${dateStr}`;
   try {
     const lat = 21.25, lon = 81.63;
     const archiveUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${dateStr}&end_date=${dateStr}&hourly=temperature_2m,relative_humidity_2m&timezone=Asia%2FKolkata`;
     const res = await fetch(archiveUrl);
     const wData = await res.json();
-    if (!wData.hourly) throw new Error("No archive data returned.");
+    if (!wData.hourly) throw new Error("No archive records returned.");
 
     const temps = wData.hourly.temperature_2m.slice(9, 18);
     const rhs = wData.hourly.relative_humidity_2m.slice(9, 18);
@@ -988,7 +1117,7 @@ async function runHistoricalReplay(dateStr) {
     $("metricAirTemp").textContent = `${maxTemp} °C`;
     $("promptPeakTag").textContent = `${maxWb}°C`;
     $("highRiskStat").textContent = households.filter(h => h.risk === "High").length;
-    $("metricSource").textContent = `Historical Archive (${dateStr})`;
+    $("metricSource").textContent = `Archive (${dateStr})`;
     $("peakLabel").textContent = `Historical Peak at ${hourLabel(peakHour)}`;
 
     renderVolumetricColumns(curve);
@@ -1014,11 +1143,18 @@ async function loadScenario(scenario) {
     if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
     const a = data.analysis || {};
 
-    $("metricPeakVal").textContent = `${a.peak_wet_bulb_c ?? "—"}°C`;
+    const maxWb = Number(a.peak_wet_bulb_c ?? 32.7);
+    $("metricPeakVal").textContent = `${maxWb.toFixed(1)}°C`;
     $("metricAirTemp").textContent = `${a.peak_temp_c ?? "—"} °C`;
-    $("promptPeakTag").textContent = `${a.peak_wet_bulb_c ?? "—"}°C`;
+    $("promptPeakTag").textContent = `${maxWb.toFixed(1)}°C`;
     $("peakLabel").textContent = `Peak expected at ${hourLabel(a.peak_hour ?? 13)}`;
     $("metricSource").textContent = data.forecast_source === "simulated" ? "Simulated Baseline" : (data.forecast_source || "Open-Meteo API");
+
+    // Dynamic Progress Fill Calculations
+    $("barAirTemp").style.width = `${Math.min(100, Math.max(10, ((Number(a.peak_temp_c || 35) - 20) / 30) * 100))}%`;
+    $("barDanger").style.width = `${maxWb >= 31 ? 95 : 45}%`;
+    $("dangerRefBadge").textContent = maxWb >= 31 ? "Exceeded" : "Normal";
+    $("dangerRefBadge").style.color = maxWb >= 31 ? "var(--accent-red)" : "var(--accent-green)";
 
     const highCount = (data.households || []).filter(h => String(h.risk).toLowerCase() === "high").length;
     $("highRiskStat").textContent = highCount;
@@ -1064,6 +1200,7 @@ $("histBtn").addEventListener("click", () => {
   runHistoricalReplay(d);
 });
 
+// Speech Synthesis
 $("speakBtn").addEventListener("click", () => {
   if (!briefingText) return;
   if (!("speechSynthesis" in window)) { alert("Speech synthesis unsupported."); return; }
@@ -1074,7 +1211,7 @@ $("speakBtn").addEventListener("click", () => {
   window.speechSynthesis.speak(utterance);
 });
 
-// Download CSV
+// CSV Export
 $("downloadCsvBtn").addEventListener("click", () => {
   const rows = [...document.querySelectorAll("#households .queue-row")].filter(r => r.style.display !== "none");
   if (!rows.length) { alert("No rows to export."); return; }
